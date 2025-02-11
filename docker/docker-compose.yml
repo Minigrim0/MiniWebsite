@@ -114,7 +114,7 @@ volumes:
   gitlab_config:
   gitlab_logs:
   gitlab_data:
-s
+
 networks:
   traefik-proxy:
     external: true

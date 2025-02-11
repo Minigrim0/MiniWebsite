@@ -90,9 +90,9 @@ services:
       - '4430:443'
       - '2222:22'
     volumes:
-      - '$GITLAB_HOME/config:/etc/gitlab'
-      - '$GITLAB_HOME/logs:/var/log/gitlab'
-      - '$GITLAB_HOME/data:/var/opt/gitlab'
+      - 'gitlab_config:/etc/gitlab'
+      - 'gitlab_logs:/var/log/gitlab'
+      - 'gitlab_data:/var/opt/gitlab'
     shm_size: '256m'
     labels:
       - "traefik.enable=true"
@@ -111,7 +111,10 @@ volumes:
   static_volume:
   postgres_data:
   redis_data:
-
+  gitlab_config:
+  gitlab_logs:
+  gitlab_data:
+s
 networks:
   traefik-proxy:
     external: true

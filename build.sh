@@ -3,10 +3,6 @@
 # Required for docker-compose to use buildkit
 export DOCKER_BUILDKIT=1
 export COMPOSE_DOCKER_CLI_BUILD=1
-export GITLAB_HOME="./.gitlab"
-
-# Actual foder is created in the docker directory
-mkdir -p docker/$GITLAB_HOME
 
 help_text () {
     echo "Usage: $0 {up|attach|logs|down} {dev|prod}"

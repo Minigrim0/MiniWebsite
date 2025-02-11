@@ -1,123 +1,123 @@
 services:
-  web:
-    build:
-      dockerfile: docker/web.dockerfile
-      context: ..
-    expose:
-      - 8000
-    env_file:
-      - ./.env.prod
-    volumes:
-      - static_volume:/usr/src/app/static
-    depends_on:
-      - redis
-    labels:
-      ofelia.enabled: "true"
-      ofelia.job-exec.githubcron.schedule: "@every 1d"
-      ofelia.job-exec.githubcron.command: "/bin/minigrim0 >> minigrim0.log && python manage.py fetchrepositories >> repo.log"
-      ofelia.job-exec.githubcron.timezone: "Europe/Stockholm"
-    restart: unless-stopped
-    networks:
-      - private
+    web:
+        build:
+            dockerfile: docker/web.dockerfile
+            context: ..
+        expose:
+            - 8000
+        env_file:
+            - ./.env.prod
+        volumes:
+            - static_volume:/usr/src/app/static
+        depends_on:
+            - redis
+        labels:
+            ofelia.enabled: "true"
+            ofelia.job-exec.githubcron.schedule: "@every 1d"
+            ofelia.job-exec.githubcron.command: "/bin/minigrim0 >> minigrim0.log && python manage.py fetchrepositories >> repo.log"
+            ofelia.job-exec.githubcron.timezone: "Europe/Stockholm"
+        restart: unless-stopped
+        networks:
+            - private
 
-  nginx:
-    build:
-      context: ./nginx
-      dockerfile: Dockerfile
-    volumes:
-      - static_volume:/srv/static
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.minigrim0-web-insecure.entrypoints=http"
-      - "traefik.http.routers.minigrim0-web-insecure.rule=Host(`minigrim0.xyz`)"
-      - "traefik.http.middlewares.minigrim0-web-redirect.redirectscheme.scheme=https"
-      - "traefik.http.routers.minigrim0-web-insecure.middlewares=minigrim0-web-redirect"
-      - "traefik.http.routers.minigrim0-web.entrypoints=https"
-      - "traefik.http.routers.minigrim0-web.rule=Host(`minigrim0.xyz`)"
-      - "traefik.http.routers.minigrim0-web.tls=true"
-      - "traefik.http.routers.minigrim0-web.tls.certresolver=http"
-      - "traefik.http.routers.minigrim0-web.service=nginx-minigrim0-web"
-      - "traefik.docker.network=traefik-proxy"
-    depends_on:
-      - web
-    networks:
-      - traefik-proxy
-      - private
-    restart: unless-stopped
+    nginx:
+        build:
+            context: ./nginx
+            dockerfile: Dockerfile
+        volumes:
+            - static_volume:/srv/static
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.minigrim0-web-insecure.entrypoints=http"
+            - "traefik.http.routers.minigrim0-web-insecure.rule=Host(`minigrim0.xyz`)"
+            - "traefik.http.middlewares.minigrim0-web-redirect.redirectscheme.scheme=https"
+            - "traefik.http.routers.minigrim0-web-insecure.middlewares=minigrim0-web-redirect"
+            - "traefik.http.routers.minigrim0-web.entrypoints=https"
+            - "traefik.http.routers.minigrim0-web.rule=Host(`minigrim0.xyz`)"
+            - "traefik.http.routers.minigrim0-web.tls=true"
+            - "traefik.http.routers.minigrim0-web.tls.certresolver=http"
+            - "traefik.http.routers.minigrim0-web.service=nginx-minigrim0-web"
+            - "traefik.docker.network=traefik-proxy"
+        depends_on:
+            - web
+        networks:
+            - traefik-proxy
+            - private
+        restart: unless-stopped
 
-  postgres:
-    image: postgres:15.2-alpine
-    env_file:
-      - ./.env.prod.db
-    volumes:
-      - postgres_data:/var/lib/postgresql/data/
-    restart: unless-stopped
-    networks:
-      - private
+    postgres:
+        image: postgres:15.2-alpine
+        env_file:
+            - ./.env.prod.db
+        volumes:
+            - postgres_data:/var/lib/postgresql/data/
+        restart: unless-stopped
+        networks:
+            - private
 
-  redis:
-    image: redis:alpine
-    volumes:
-      - redis_data:/data
-    expose:
-      - 6379
-    restart: unless-stopped
-    networks:
-      - private
+    redis:
+        image: redis:alpine
+        volumes:
+            - redis_data:/data
+        expose:
+            - 6379
+        restart: unless-stopped
+        networks:
+            - private
 
-  ofelia:
-    image: mcuadros/ofelia:latest
-    command: daemon --docker
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    restart: unless-stopped
-    depends_on:
-      - web
-    networks:
-      - private
+    ofelia:
+        image: mcuadros/ofelia:latest
+        command: daemon --docker
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+        restart: unless-stopped
+        depends_on:
+            - web
+        networks:
+            - private
 
-  gitlab:
-    image: gitlab/gitlab-ee:latest
-    container_name: gitlab
-    restart: always
-    hostname: 'git.minigrim0.xyz'
-    environment:
-      GITLAB_OMNIBUS_CONFIG: |
-        external_url 'https://git.minigrim0.xyz'
-        gitlab_rails['gitlab_shell_ssh_port'] = 22
-    ports:
-      - '9171:80'
-      - '4430:443'
-      - '2222:22'
-    volumes:
-      - 'gitlab_config:/etc/gitlab'
-      - 'gitlab_logs:/var/log/gitlab'
-      - 'gitlab_data:/var/opt/gitlab'
-    shm_size: '256m'
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.minigrim0-git-insecure.entrypoints=http"
-      - "traefik.http.routers.minigrim0-git-insecure.rule=Host(`git.minigrim0.xyz`)"
-      - "traefik.http.middlewares.minigrim0-git-redirect.redirectscheme.scheme=https"
-      - "traefik.http.routers.minigrim0-git-insecure.middlewares=minigrim0-git-redirect"
-      - "traefik.http.routers.minigrim0-git.entrypoints=https"
-      - "traefik.http.routers.minigrim0-git.rule=Host(`git.minigrim0.xyz`)"
-      - "traefik.http.routers.minigrim0-git.tls=true"
-      - "traefik.http.routers.minigrim0-git.tls.certresolver=http"
-      - "traefik.http.routers.minigrim0-git.service=gitlab-minigrim0-web"
-      - "traefik.docker.network=traefik-proxy"
+    gitlab:
+        image: gitlab/gitlab-ce:latest
+        container_name: gitlab
+        restart: always
+        networks:
+            - traefik-proxy
+        environment:
+            GITLAB_OMNIBUS_CONFIG: |
+                external_url 'https://git.minigrim0.xyz'
+                nginx['listen_https'] = false
+                nginx['listen_port'] = 80
+                gitlab_rails['gitlab_shell_ssh_port'] = 2222
+        ports:
+            - "2222:22"
+        volumes:
+            - "gitlab_config:/etc/gitlab"
+            - "gitlab_logs:/var/log/gitlab"
+            - "gitlab_data:/var/opt/gitlab"
+        shm_size: "256m"
+        labels:
+            - traefik.enable=true
+            - traefik.docker.network=traefik-proxy
+            - traefik.http.routers.gitlab.rule=Host(`git.minigrim0.xyz`)
+            - traefik.http.routers.gitlab.entrypoints=https
+            - traefik.http.routers.gitlab.tls.certresolver=http
+            - traefik.http.services.gitlab-minigrim0-web.loadbalancer.server.port=80
+            - traefik.tcp.routers.gitlab-ssh.rule=HostSNI(`git.minigrim0.xyz`)
+            - traefik.tcp.routers.gitlab-ssh.entrypoints=ssh
+            - traefik.tcp.routers.gitlab-ssh.service=gitlab-ssh-svc
+            - traefik.tcp.services.gitlab-ssh-svc.loadbalancer.server.port=2222
 
 volumes:
-  static_volume:
-  postgres_data:
-  redis_data:
-  gitlab_config:
-  gitlab_logs:
-  gitlab_data:
+    static_volume:
+    postgres_data:
+    redis_data:
+    gitlab_config:
+    gitlab_logs:
+    gitlab_data:
 
 networks:
-  traefik-proxy:
-    external: true
-  private:
-    driver: overlay
-    attachable: true
+    traefik-proxy:
+        external: true
+    private:
+        driver: overlay
+        attachable: true

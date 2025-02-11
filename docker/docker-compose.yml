@@ -104,7 +104,6 @@ services:
       - "traefik.http.routers.minigrim0-git.rule=Host(`git.minigrim0.xyz`)"
       - "traefik.http.routers.minigrim0-git.tls=true"
       - "traefik.http.routers.minigrim0-git.tls.certresolver=http"
-      - "traefik.http.routers.minigrim0-git.service=nginx-minigrim0-git"
       - "traefik.docker.network=traefik-proxy"
 
 volumes:

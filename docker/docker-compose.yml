@@ -76,6 +76,25 @@ services:
     networks:
       - private
 
+  gitlab:
+      image: gitlab/gitlab-ee:latest
+      container_name: gitlab
+      restart: always
+      hostname: 'git.minigrim0.xyz'
+      environment:
+        GITLAB_OMNIBUS_CONFIG: |
+          external_url 'https://git.minigrim0.xyz:9171'
+          gitlab_rails['gitlab_shell_ssh_port'] = 2222
+      ports:
+        - '9171:9171'
+        - '443:443'
+        - '2222:2222'
+      volumes:
+        - '$GITLAB_HOME/config:/etc/gitlab'
+        - '$GITLAB_HOME/logs:/var/log/gitlab'
+        - '$GITLAB_HOME/data:/var/opt/gitlab'
+      shm_size: '256m'
+
 volumes:
   static_volume:
   postgres_data:

@@ -84,10 +84,11 @@ services:
     environment:
       GITLAB_OMNIBUS_CONFIG: |
         external_url 'https://git.minigrim0.xyz'
+        gitlab_rails['gitlab_shell_ssh_port'] = 2222
     ports:
       - '80:9171'
       - '443:4430'
-      - '22:2222'
+      - '2222:2222'
     volumes:
       - '$GITLAB_HOME/config:/etc/gitlab'
       - '$GITLAB_HOME/logs:/var/log/gitlab'

@@ -1,5 +1,5 @@
 # Compile Github Fetcher
-ARG APP_NAME=minigrim0
+ARG APP_NAME=github-project-fetcher
 
 FROM rust:slim-bullseye AS build
 ARG APP_NAME

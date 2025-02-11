@@ -77,23 +77,34 @@ services:
       - private
 
   gitlab:
-      image: gitlab/gitlab-ee:latest
-      container_name: gitlab
-      restart: always
-      hostname: 'git.minigrim0.xyz'
-      environment:
-        GITLAB_OMNIBUS_CONFIG: |
-          external_url 'https://git.minigrim0.xyz:9171'
-          gitlab_rails['gitlab_shell_ssh_port'] = 2222
-      ports:
-        - '9171:9171'
-        - '443:443'
-        - '2222:2222'
-      volumes:
-        - '$GITLAB_HOME/config:/etc/gitlab'
-        - '$GITLAB_HOME/logs:/var/log/gitlab'
-        - '$GITLAB_HOME/data:/var/opt/gitlab'
-      shm_size: '256m'
+    image: gitlab/gitlab-ee:latest
+    container_name: gitlab
+    restart: always
+    hostname: 'git.minigrim0.xyz'
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'https://git.minigrim0.xyz'
+    ports:
+      - '80:9171'
+      - '443:4430'
+      - '22:2222'
+    volumes:
+      - '$GITLAB_HOME/config:/etc/gitlab'
+      - '$GITLAB_HOME/logs:/var/log/gitlab'
+      - '$GITLAB_HOME/data:/var/opt/gitlab'
+    shm_size: '256m'
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.minigrim0-git-insecure.entrypoints=http"
+      - "traefik.http.routers.minigrim0-git-insecure.rule=Host(`git.minigrim0.xyz`)"
+      - "traefik.http.middlewares.minigrim0-git-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.minigrim0-git-insecure.middlewares=minigrim0-git-redirect"
+      - "traefik.http.routers.minigrim0-git.entrypoints=https"
+      - "traefik.http.routers.minigrim0-git.rule=Host(`git.minigrim0.xyz`)"
+      - "traefik.http.routers.minigrim0-git.tls=true"
+      - "traefik.http.routers.minigrim0-git.tls.certresolver=http"
+      - "traefik.http.routers.minigrim0-git.service=nginx-minigrim0-git"
+      - "traefik.docker.network=traefik-proxy"
 
 volumes:
   static_volume:

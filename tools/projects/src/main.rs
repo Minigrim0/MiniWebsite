@@ -45,7 +45,7 @@ fn save_repos(repos: HashMap<String, Repo>) -> redis::RedisResult<()> {
             Err(err) => err.to_string(),
         };
 
-        con.set(key, serialized)?;
+        () = con.set(key, serialized)?;
     }
 
     Ok(())
@@ -72,7 +72,7 @@ async fn get_data(octocrab: Octocrab, repo_name: String, branch: String) -> Stri
     let body = content.into_body();
     let truc = match to_bytes(body).await {
         Ok(val) => val,
-        Err(_) => panic!("Could fetch bytes"),
+        Err(_) => panic!("Could not fetch bytes"),
     };
 
     // Convert the response body bytes to a string
@@ -88,12 +88,9 @@ async fn get_data(octocrab: Octocrab, repo_name: String, branch: String) -> Stri
 /// # Returns
 ///
 /// `true` if the response is not valid JSON, `false` otherwise.
-async fn verify_data(response: String) -> bool {
+async fn verify_data(response: &String) -> bool {
     let parsed: Result<json::JsonValue, json::Error> = json::parse(response.as_str());
-    match parsed {
-        Ok(_data) => false,
-        Err(_) => true,
-    }
+    parsed.is_ok()
 }
 
 #[tokio::main]
@@ -135,34 +132,25 @@ async fn main() -> Result<(), ()> {
             get_data(octocrab.clone(), repo.name.clone(), "main".to_string()).await;
 
         // Get repository URL
-        let repo_url: String = match repo.html_url {
-            Some(url) => url.to_string(),
-            None => "Missing url".to_string(),
-        };
+        let url: String = repo.html_url
+            .and_then(|url| Some(url.to_string()))
+            .unwrap_or("Missing url".to_string());
 
         // Get star count
-        let repo_stars: u32 = match repo.stargazers_count {
-            Some(amount) => amount,
-            None => 0,
-        };
+        let stars: u32 = repo.stargazers_count.unwrap_or(0);
 
         // Verify and fetch README content
-        let readme_str: String;
-        match verify_data(body_str.clone()).await {
-            false => {
-                // If main branch doesn't have a README, try master branch
-                let readme: String =
-                    get_data(octocrab.clone(), repo.name.clone(), "master".to_string()).await;
-                if verify_data(readme.clone()).await == true {
-                    readme_str = readme;
-                } else {
-                    readme_str = "No readme found".to_string();
-                }
+        let readme_str: String = if verify_data(&body_str).await {
+            body_str
+        } else {
+            // If main branch doesn't have a README, try master branch
+            let readme: String = get_data(octocrab.clone(), repo.name.clone(), "master".to_string()).await;
+            if verify_data(&readme).await {
+                readme
+            } else {
+                "No readme found".to_string()
             }
-            true => {
-                readme_str = body_str;
-            }
-        }
+        };
 
         // Store repository data
         data.insert(
@@ -172,8 +160,8 @@ async fn main() -> Result<(), ()> {
                 description: repo.description,
                 readme: Some(readme_str),
                 homepage: repo.homepage,
-                url: repo_url,
-                stars: repo_stars,
+                url,
+                stars,
             },
         );
     }

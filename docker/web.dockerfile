@@ -19,7 +19,7 @@ cp ./target/release/$APP_NAME /bin/minigrim0
 EOF
 
 # Compile CSS
-FROM alpine:latest as css
+FROM alpine:latest AS css
 
 WORKDIR /app
 

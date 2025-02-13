@@ -13,7 +13,7 @@ services:
             - redis
         labels:
             ofelia.enabled: "true"
-            ofelia.job-exec.githubcron.schedule: "@every 1d"
+            ofelia.job-exec.githubcron.schedule: "@every 1h"
             ofelia.job-exec.githubcron.command: "/bin/minigrim0 >> minigrim0.log && python manage.py fetchrepositories >> repo.log"
             ofelia.job-exec.githubcron.timezone: "Europe/Stockholm"
         restart: unless-stopped
@@ -76,65 +76,14 @@ services:
         networks:
             - private
 
-    gitlab:
-        image: gitlab/gitlab-ce:latest
-        container_name: gitlab
-        restart: always
-        networks:
-            - traefik-proxy
-            - gitlab-private
-        environment:
-            GITLAB_OMNIBUS_CONFIG: |
-                external_url 'https://git.minigrim0.xyz'
-                nginx['listen_https'] = false
-                nginx['listen_port'] = 80
-                gitlab_rails['gitlab_shell_ssh_port'] = 2222
-        ports:
-            - "2222:22"
-        volumes:
-            - "gitlab_config:/etc/gitlab"
-            - "gitlab_logs:/var/log/gitlab"
-            - "gitlab_data:/var/opt/gitlab"
-        shm_size: "256m"
-        labels:
-            - traefik.enable=true
-            - traefik.docker.network=traefik-proxy
-            - traefik.http.routers.gitlab.rule=Host(`git.minigrim0.xyz`)
-            - traefik.http.routers.gitlab.entrypoints=https
-            - traefik.http.routers.gitlab.tls.certresolver=http
-            - traefik.http.services.gitlab-minigrim0-web.loadbalancer.server.port=80
-            - traefik.tcp.routers.gitlab-ssh.rule=HostSNI(`git.minigrim0.xyz`)
-            - traefik.tcp.routers.gitlab-ssh.entrypoints=ssh
-            - traefik.tcp.routers.gitlab-ssh.service=gitlab-ssh-svc
-            - traefik.tcp.services.gitlab-ssh-svc.loadbalancer.server.port=2222
-
-    gitlab-runner:
-        image: gitlab/gitlab-runner:latest
-        container_name: gitlab-runner
-        volumes:
-            - runner_config:/etc/gitlab-runner:Z
-            - /var/run/docker.sock:/var/run/docker.sock
-        networks:
-            gitlab-private:
-        labels:
-            - traefik.enable=false
-        restart: always
-
 volumes:
     static_volume:
     postgres_data:
     redis_data:
-    gitlab_config:
-    gitlab_logs:
-    gitlab_data:
-    runner_config:
 
 networks:
     traefik-proxy:
         external: true
     private:
-        driver: overlay
-        attachable: true
-    gitlab-private:
         driver: overlay
         attachable: true
